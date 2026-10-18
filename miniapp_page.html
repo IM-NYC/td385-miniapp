@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- The policy below names the sha256 of the page's one inline script: public by design. -->
+<meta http-equiv="Content-Security-Policy" content="{{CSP}}"><!-- pragma: allowlist secret -->
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>TD385 Meme Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --fb-bg: #ffffff; --fb-text: #1c1c1e; --fb-hint: #6d7378; --fb-link: #2481cc;
+  --fb-button: #2481cc; --fb-button-text: #ffffff; --fb-secondary-bg: #f0f1f4;
+  --fb-section-bg: #ffffff; --fb-destructive: #d22d2d; --fb-sep: #e1e3e8;
+  --good: #16884a; --warn-bg: #fff4d6; --warn-text: #7a5300; --bad-bg: #fde3e3; --info-bg: #e3effc;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fb-bg: #17212b; --fb-text: #f2f4f5; --fb-hint: #8d9ba8; --fb-link: #6ab3f3;
+    --fb-button: #5288c1; --fb-button-text: #ffffff; --fb-secondary-bg: #0e1621;
+    --fb-section-bg: #17212b; --fb-destructive: #f0646b; --fb-sep: #2a3946;
+    --good: #5bc785; --warn-bg: #3d3216; --warn-text: #f2c66d; --bad-bg: #431d22; --info-bg: #1c3147;
+  }
+}
+:root[data-theme="dark"] {
+  --fb-bg: #17212b; --fb-text: #f2f4f5; --fb-hint: #8d9ba8; --fb-link: #6ab3f3;
+  --fb-button: #5288c1; --fb-button-text: #ffffff; --fb-secondary-bg: #0e1621;
+  --fb-section-bg: #17212b; --fb-destructive: #f0646b; --fb-sep: #2a3946;
+  --good: #5bc785; --warn-bg: #3d3216; --warn-text: #f2c66d; --bad-bg: #431d22; --info-bg: #1c3147;
+}
+:root {
+  --bg: var(--tg-theme-bg-color, var(--fb-bg));
+  --text: var(--tg-theme-text-color, var(--fb-text));
+  --hint: var(--tg-theme-hint-color, var(--fb-hint));
+  --link: var(--tg-theme-link-color, var(--fb-link));
+  --button: var(--tg-theme-button-color, var(--fb-button));
+  --button-text: var(--tg-theme-button-text-color, var(--fb-button-text));
+  --secondary-bg: var(--tg-theme-secondary-bg-color, var(--fb-secondary-bg));
+  --section-bg: var(--tg-theme-section-bg-color, var(--fb-section-bg));
+  --bad: var(--tg-theme-destructive-text-color, var(--fb-destructive));
+  --sep: var(--tg-theme-section-separator-color, var(--fb-sep));
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--secondary-bg); color: var(--text);
+  font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  overflow-x: hidden; -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 8px 12px calc(24px + env(safe-area-inset-bottom)); }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 2px 8px; }
+header h1 { font-size: 17px; margin: 0; }
+.tag { font-size: 12px; color: var(--hint); white-space: nowrap; }
+nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+nav button {
+  flex: 1 1 auto; min-width: 0; border: 0; border-radius: 9px; padding: 8px 6px;
+  background: var(--section-bg); color: var(--text); font: inherit; font-size: 13px; cursor: pointer;
+}
+nav button[aria-selected="true"] { background: var(--button); color: var(--button-text); }
+.card { background: var(--section-bg); border-radius: 12px; padding: 10px 12px; margin: 0 0 8px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 6px; }
+.kv { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 3px 0; border-top: 1px solid var(--sep); }
+.kv:first-of-type { border-top: 0; }
+.k { color: var(--hint); flex: 0 0 auto; }
+.v { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.big { font-size: 26px; font-weight: 600; margin: 2px 0 4px; overflow-wrap: anywhere; }
+.muted { color: var(--hint); font-size: 13px; }
+.good { color: var(--good); }
+.bad { color: var(--bad); }
+.row-title { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sym { font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.name { color: var(--hint); font-size: 13px; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.chip { font-size: 12px; padding: 1px 7px; border-radius: 9px; background: var(--secondary-bg); color: var(--hint); overflow-wrap: anywhere; }
+.chip.warn { background: var(--warn-bg); color: var(--warn-text); }
+.banner { border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; font-size: 14px; overflow-wrap: anywhere; }
+.banner.warn { background: var(--warn-bg); color: var(--warn-text); }
+.banner.bad { background: var(--bad-bg); color: var(--bad); }
+.banner.info { background: var(--info-bg); color: var(--text); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 4px 10px; margin-top: 4px; font-size: 13px; }
+.grid span { min-width: 0; overflow-wrap: anywhere; }
+.set { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--sep); }
+.set:first-of-type { border-top: 0; }
+.set.changed .val { color: var(--button); font-weight: 600; }
+.set.flash { background: var(--info-bg); border-radius: 8px; }
+.set .lbl { min-width: 0; }
+.set .lbl b { display: block; font-weight: 600; }
+.set .lbl small { display: block; color: var(--hint); font-size: 12px; overflow-wrap: anywhere; }
+.val { min-width: 58px; text-align: center; font-variant-numeric: tabular-nums; }
+.step {
+  width: 40px; height: 36px; border: 0; border-radius: 9px; font: inherit; font-size: 20px; line-height: 1;
+  background: var(--secondary-bg); color: var(--text); cursor: pointer;
+}
+.step:disabled { opacity: 0.35; cursor: default; }
+.btn { border: 0; border-radius: 9px; padding: 8px 12px; font: inherit; background: var(--secondary-bg); color: var(--link); cursor: pointer; }
+.tune { border: 0; background: none; color: var(--link); font: inherit; font-size: 13px; padding: 0; cursor: pointer; }
+.payload { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; user-select: all; }
+.err { color: var(--bad); font-size: 13px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TD385 meme bot</h1>
+    <span class="tag" id="age">no snapshot</span>
+  </header>
+  <div id="banners"></div>
+  <nav id="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="status" aria-selected="true">Status</button>
+    <button type="button" role="tab" data-tab="positions" aria-selected="false">Positions</button>
+    <button type="button" role="tab" data-tab="watch" aria-selected="false">Watch</button>
+    <button type="button" role="tab" data-tab="why" aria-selected="false">Why</button>
+    <button type="button" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+    <button type="button" role="tab" data-tab="learner" aria-selected="false">Learner</button>
+  </nav>
+  <main>
+    <section id="tab-status" role="tabpanel"></section>
+    <section id="tab-positions" role="tabpanel" hidden></section>
+    <section id="tab-watch" role="tabpanel" hidden></section>
+    <section id="tab-why" role="tabpanel" hidden></section>
+    <section id="tab-settings" role="tabpanel" hidden></section>
+    <section id="tab-learner" role="tabpanel" hidden></section>
+  </main>
+  <p class="muted" id="foot">Paper trading only: no real orders. This page has no server; its data is in the link you opened.</p>
+</div>
+<script type="application/json" id="schema">{{SCHEMA_JSON}}</script>
+<script>
+(function () {
+  "use strict";
+
+  /* payload-encoder:begin (kept in lockstep with td385/meme/miniapp.py encode_changes; tested) */
+  var PAYLOAD = { prefix: "ma1_", maxChanges: 8, maxLength: 64 };
+  function payloadValue(x) {
+    if (typeof x !== "number" || !isFinite(x)) { throw new Error("not a finite number"); }
+    var s = x.toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
+    if (s === "" || s === "-0") { s = "0"; }
+    var neg = s.charAt(0) === "-";
+    if (neg) { s = s.slice(1); }
+    return (neg ? "n" : "") + s.replace(".", "p");
+  }
+  function encodePayload(pairs) {
+    if (!Array.isArray(pairs) || pairs.length === 0) { throw new Error("no changes"); }
+    if (pairs.length > PAYLOAD.maxChanges) { throw new Error("at most " + PAYLOAD.maxChanges + " changes at a time"); }
+    var seen = {}, parts = [];
+    for (var i = 0; i < pairs.length; i++) {
+      var code = pairs[i][0];
+      if (typeof code !== "string" || !/^[a-z]{2}$/.test(code)) { throw new Error("bad setting code"); }
+      if (seen[code] === true) { throw new Error("a setting given twice"); }
+      seen[code] = true;
+      parts.push(code + payloadValue(pairs[i][1]));
+    }
+    var out = PAYLOAD.prefix + parts.join("_");
+    if (out.length > PAYLOAD.maxLength) { throw new Error("too long: apply fewer changes at a time"); }
+    return out;
+  }
+  /* payload-encoder:end */
+
+  var doc = document;
+  var MAX_RAW = 65536;
+  var BOT_RE = /^[A-Za-z0-9_]{5,32}$/;
+  var CODE_RE = /^[a-z]{2}$/;
+  var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+
+  // ------------------------------------------------------------------ typed reads
+  function N(x) { return (typeof x === "number" && isFinite(x)) ? x : null; }
+  function S(x, max) { return (typeof x === "string") ? x.slice(0, max || 64) : ""; }
+  function A(x, max) { return Array.isArray(x) ? x.slice(0, max) : []; }
+  function O(x) { return (x !== null && typeof x === "object" && !Array.isArray(x)) ? x : {}; }
+
+  // ------------------------------------------------------------------ DOM (text only)
+  function el(tag, cls, text) {
+    var e = doc.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text !== undefined && text !== null) { e.textContent = String(text); }
+    return e;
+  }
+  function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
+  function card(title) {
+    var c = el("div", "card");
+    if (title) { c.appendChild(el("h2", "", title)); }
+    return c;
+  }
+  function kv(parent, k, v, cls) {
+    var r = el("div", "kv");
+    r.appendChild(el("span", "k", k));
+    r.appendChild(el("span", "v" + (cls ? " " + cls : ""), v));
+    parent.appendChild(r);
+    return r;
+  }
+
+  // ------------------------------------------------------------------ formatting
+  function trimNum(x, nd) {
+    var s = x.toFixed(nd);
+    return nd > 0 ? s.replace(/\.?0+$/, "") : s;
+  }
+  function fmt(x, nd, unit) { return x === null ? "—" : trimNum(x, nd) + (unit || ""); }
+  function signed(x, nd, unit) { return x === null ? "—" : (x > 0 ? "+" : "") + trimNum(x, nd) + (unit || ""); }
+  function tone(x) { return x === null || x === 0 ? "" : (x > 0 ? "good" : "bad"); }
+  function sol(x) { return fmt(x, 4, " SOL"); }
+  function dur(s) {
+    if (s === null) { return "—"; }
+    s = Math.max(0, Math.round(s));
+    if (s < 60) { return s + "s"; }
+    if (s < 3600) { return Math.floor(s / 60) + "m " + ("0" + (s % 60)).slice(-2) + "s"; }
+    return Math.floor(s / 3600) + "h " + ("0" + Math.floor((s % 3600) / 60)).slice(-2) + "m";
+  }
+  function compact(x) {
+    return (x === Math.trunc(x) && Math.abs(x) < 1e9) ? String(x) : String(Number(x.toPrecision(4)));
+  }
+  function settingText(meta, v) {
+    if (v === null) { return "—"; }
+    var u = meta.unit;
+    if (u === "%") { return compact(v) + "%"; }
+    if (u === " min") { return (v >= 60 && v % 60 === 0) ? compact(v / 60) + "h" : compact(v) + "m"; }
+    if (u === " s") { return (v >= 60 && v % 60 === 0) ? compact(v / 60) + "m" : compact(v) + "s"; }
+    if (u === " h") { return (v >= 48 && v % 24 === 0) ? compact(v / 24) + "d" : compact(v) + "h"; }
+    if (u === " ms") { return compact(v / 1000) + "s"; }
+    if (u === "x") { return compact(v) + "x"; }
+    if (u === " SOL") { return compact(v) + " SOL"; }
+    return compact(v);
+  }
+  function words(key) { return S(key, 48).replace(/[_:]+/g, " ").trim(); }
+
+  // ------------------------------------------------------------------ Telegram
+  var TG = null;
+  try { if (window.Telegram && window.Telegram.WebApp) { TG = window.Telegram.WebApp; } } catch (e) { TG = null; }
+  var IN_TG = !!(TG && typeof TG.platform === "string" && TG.platform !== "unknown");
+  function tgAtLeast(v) {
+    try { return !!(TG && typeof TG.isVersionAtLeast === "function" && TG.isVersionAtLeast(v)); } catch (e) { return false; }
+  }
+  function haptic(kind) {
+    if (!IN_TG || !tgAtLeast("6.1") || !TG.HapticFeedback) { return; }
+    try {
+      if (kind === "step") { TG.HapticFeedback.selectionChanged(); }
+      else { TG.HapticFeedback.notificationOccurred(kind); }
+    } catch (e) { /* haptics are a nicety */ }
+  }
+  function applyTheme() {
+    if (IN_TG && (TG.colorScheme === "dark" || TG.colorScheme === "light")) {
+      doc.documentElement.setAttribute("data-theme", TG.colorScheme);
+    }
+  }
+
+  // ------------------------------------------------------------------ schema
+  var SCHEMA = null;
+  try {
+    var sc = JSON.parse(doc.getElementById("schema").textContent);
+    if (O(sc).v === 1 && Array.isArray(sc.settings)) { SCHEMA = sc; }
+  } catch (e) { SCHEMA = null; }
+  var META = {};
+  if (SCHEMA) {
+    SCHEMA.settings.forEach(function (m) {
+      if (CODE_RE.test(S(m.code, 2)) && N(m.lo) !== null && N(m.hi) !== null && N(m.step) !== null && m.step > 0) {
+        META[m.code] = { code: m.code, lo: m.lo, hi: m.hi, step: m.step, unit: S(m.unit, 8),
+                         short: S(m.short, 12), label: S(m.label, 40) };
+      }
+    });
+  }
+  var STALE_S = SCHEMA && N(SCHEMA.stale_s) !== null ? SCHEMA.stale_s : 60;
+
+  // ------------------------------------------------------------------ snapshot decoding
+  function UserError(msg) { this.message = msg; }
+  function fragmentParam() {
+    var h = "";
+    try { h = String(location.hash || ""); } catch (e) { h = ""; }
+    var parts = h.replace(/^#/, "").split(/[&?]/);
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i].slice(0, 2) === "s=") {
+        var v = parts[i].slice(2);
+        return /^[zj][A-Za-z0-9_-]{1,4096}$/.test(v) ? v : "";
+      }
+    }
+    return null;
+  }
+  function b64urlBytes(s) {
+    var b = s.replace(/-/g, "+").replace(/_/g, "/");
+    while (b.length % 4) { b += "="; }
+    var bin = atob(b);
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
+    return out;
+  }
+  async function inflateRaw(bytes) {
+    var ds = null;
+    try { ds = (typeof DecompressionStream === "function") ? new DecompressionStream("deflate-raw") : null; } catch (e) { ds = null; }
+    if (!ds) {
+      throw new UserError("This Telegram app cannot unpack the snapshot (no DecompressionStream for deflate-raw). Update Telegram or the phone's system WebView.");
+    }
+    var reader = new Blob([bytes]).stream().pipeThrough(ds).getReader();
+    var chunks = [], total = 0;
+    for (;;) {
+      var r = await reader.read();
+      if (r.done) { break; }
+      total += r.value.length;
+      if (total > MAX_RAW) { try { reader.cancel(); } catch (e) { /* ignore */ } throw new UserError("The snapshot is too large."); }
+      chunks.push(r.value);
+    }
+    var out = new Uint8Array(total), at = 0;
+    chunks.forEach(function (c) { out.set(c, at); at += c.length; });
+    return out;
+  }
+  async function decodeSnapshot(frag) {
+    var bytes;
+    try { bytes = b64urlBytes(frag.slice(1)); } catch (e) { throw new UserError("The snapshot in the link is damaged (base64)."); }
+    if (frag.charAt(0) === "z") {
+      try { bytes = await inflateRaw(bytes); } catch (e) {
+        if (e instanceof UserError) { throw e; }
+        throw new UserError("The snapshot in the link is damaged (deflate).");
+      }
+    }
+    var obj;
+    try { obj = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); } catch (e) {
+      throw new UserError("The snapshot in the link is damaged (JSON).");
+    }
+    if (O(obj).v !== 1) { throw new UserError("The snapshot is from another version of the bot: rebuild the page."); }
+    return obj;
+  }
+
+  // ------------------------------------------------------------------ state
+  var SNAP = null;                 // the decoded snapshot (validated where used)
+  var ORIG = {};                   // code -> value in the snapshot
+  var EDITS = {};                  // code -> new value (local until Apply)
+  var ROWS = {};                   // code -> settings row element
+  var SENT = false;
+  var BOT = "";
+  var tabNow = "status";
+
+  function snapTime() {
+    var ts = [S(SNAP && SNAP.u, 32), S(SNAP && SNAP.t, 32)].map(function (x) { return x ? Date.parse(x) : NaN; })
+      .filter(function (x) { return isFinite(x); });
+    return ts.length ? Math.min.apply(null, ts) : null;
+  }
+
+  // ------------------------------------------------------------------ views
+  function renderBanners() {
+    var box = doc.getElementById("banners");
+    clear(box);
+    function banner(cls, text) { box.appendChild(el("div", "banner " + cls, text)); }
+    if (!SNAP) { return; }
+    var t = snapTime();
+    var age = t === null ? null : (Date.now() - t) / 1000;
+    if (age === null) { banner("warn", "The snapshot has no valid time: treat it as old."); }
+    else if (age > STALE_S) { banner("warn", "Stale: this snapshot is " + dur(age) + " old. Reopen the app from the chat for fresh numbers."); }
+    if (SNAP.ha === true) { banner("bad", "Halted: the daily loss limit was hit. No new entries today."); }
+    if (SNAP.pa === true) { banner("warn", "Paused: no new entries (resume in the chat)."); }
+    if (SNAP.nd === true) { banner("warn", "Streamed coins get no trades: the bot has launches only (check the trade data source)."); }
+    var dr = A(SNAP.dr, 3).filter(function (x) { return x === "w" || x === "fn" || x === "p"; });
+    if (dr.length) {
+      var names = { w: "the watchlist", fn: "the funnel", p: "positions beyond 3" };
+      banner("info", "Left out to fit the link: " + dr.map(function (x) { return names[x]; }).join(", ") + ". The chat shows everything.");
+    }
+    var off = A(SNAP.off, 4).map(function (x) { return S(x, 24); }).filter(Boolean);
+    if (off.length) { banner("info", "Turned off after an error: " + off.join(", ") + " (see the log)."); }
+    if (!IN_TG) { banner("info", "Opened outside Telegram: read only. Apply needs the Telegram app."); }
+  }
+
+  function renderAge() {
+    var node = doc.getElementById("age");
+    if (!SNAP) { node.textContent = "no snapshot"; return; }
+    var t = snapTime();
+    if (t === null) { node.textContent = "time unknown"; return; }
+    var age = Math.max(0, (Date.now() - t) / 1000);
+    node.textContent = (age > STALE_S ? "stale: " : "snapshot ") + (age < 2 ? "just now" : dur(age) + " old");
+    node.className = "tag" + (age > STALE_S ? " bad" : "");
+  }
+
+  function renderStatus(box) {
+    var pf = O(SNAP.pf);
+    var eq = N(pf.eq), ds = N(pf.ds), st = N(pf.st);
+    var c = card("");
+    c.appendChild(el("div", "muted", "Equity (paper)"));
+    c.appendChild(el("div", "big", sol(eq)));
+    var today = (eq !== null && ds !== null) ? eq - ds : null;
+    var total = (eq !== null && st !== null) ? eq - st : null;
+    kv(c, "P&L today", signed(today, 4, " SOL") + (today !== null && ds ? " (" + signed(today / ds * 100, 2, "%") + ")" : ""), tone(today));
+    kv(c, "P&L total", signed(total, 4, " SOL") + (total !== null && st ? " (" + signed(total / st * 100, 2, "%") + ")" : ""), tone(total));
+    var n = N(pf.n), w = N(pf.w);
+    kv(c, "Win rate", (n ? fmt(w === null ? null : w / n * 100, 0, "%") + " (" + fmt(w, 0) + " of " + fmt(n, 0) + ")" : "no trades yet"));
+    kv(c, "Failed fills", fmt(N(pf.f), 0));
+    box.appendChild(c);
+
+    var d = card("Book");
+    var maxOpen = has(O(SNAP.s), "mo") ? N(SNAP.s.mo) : null;
+    var pn = N(SNAP.pn);
+    kv(d, "Open positions", fmt(pn, 0) + (maxOpen !== null ? " of " + fmt(maxOpen, 0) : ""));
+    var ex = N(pf.ex);
+    kv(d, "Exposure", sol(ex) + (ex !== null && eq ? " (" + fmt(ex / eq * 100, 1, "%") + ")" : ""));
+    kv(d, "Cash", sol(N(pf.ca)));
+    kv(d, "Realised", signed(N(pf.re), 4, " SOL"), tone(N(pf.re)));
+    kv(d, "Fees paid", sol(N(pf.fe)));
+    box.appendChild(d);
+
+    var e = card("Bot");
+    kv(e, "State", SNAP.ha === true ? "halted" : (SNAP.pa === true ? "paused" : "trading (paper)"), SNAP.ha === true ? "bad" : "");
+    kv(e, "Source", S(SNAP.src, 16) || "—");
+    kv(e, "Preset", S(SNAP.pr, 8) || "—");
+    kv(e, "Learning", S(SNAP.lm, 8) || "—");
+    kv(e, "Settings id", S(SNAP.cid, 16) || "—");
+    kv(e, "Engine time", S(SNAP.u, 32) || "—");
+    box.appendChild(e);
+  }
+
+  function renderPositions(box) {
+    var ps = A(SNAP.p, 5).map(O);
+    var pn = N(SNAP.pn);
+    if (!ps.length) {
+      var c0 = card("");
+      c0.appendChild(el("div", "muted", A(SNAP.dr, 3).indexOf("p") >= 0 ? "Positions were left out of this link." : "No open positions."));
+      box.appendChild(c0);
+      return;
+    }
+    if (pn !== null && pn > ps.length) { box.appendChild(el("p", "muted", "Showing " + ps.length + " of " + pn + " (largest first); the chat shows all.")); }
+    ps.forEach(function (p) {
+      var c = card("");
+      var head = el("div", "row-title");
+      head.appendChild(el("span", "sym", S(p.s, 12) || "?"));
+      var pl = N(p.pl);
+      head.appendChild(el("span", tone(pl), signed(pl, 1, "%")));
+      c.appendChild(head);
+      var g = el("div", "grid");
+      g.appendChild(el("span", "", "value " + sol(N(p.v))));
+      g.appendChild(el("span", "", "cost " + sol(N(p.c))));
+      g.appendChild(el("span", "", "held " + dur(N(p.h))));
+      g.appendChild(el("span", "", "MC " + fmt(N(p.mc), 1, " SOL")));
+      g.appendChild(el("span", "", "TP +" + fmt(N(p.tp), 1, "%") + " / SL -" + fmt(N(p.sl), 1, "%")));
+      c.appendChild(g);
+      if (p.cl === true) { var ch = el("div", "chips"); ch.appendChild(el("span", "chip warn", "closing…")); c.appendChild(ch); }
+      box.appendChild(c);
+    });
+  }
+
+  function renderWatch(box) {
+    var ws = A(SNAP.w, 6).map(O);
+    if (!ws.length) {
+      var c0 = card("");
+      c0.appendChild(el("div", "muted", A(SNAP.dr, 3).indexOf("w") >= 0 ? "The watchlist was left out of this link." : "Nothing on the watchlist."));
+      box.appendChild(c0);
+      return;
+    }
+    var wt = N(SNAP.wt);
+    if (wt !== null && wt > ws.length) { box.appendChild(el("p", "muted", "Top " + ws.length + " of " + wt + " streamed coins by priority.")); }
+    ws.forEach(function (w) {
+      var c = card("");
+      var head = el("div", "row-title");
+      head.appendChild(el("span", "sym", S(w.s, 12) || "?"));
+      var wn = N(w.wn);
+      head.appendChild(el("span", wn ? "bad" : "muted", wn ? wn + (wn === 1 ? " warning" : " warnings") : "no warnings"));
+      c.appendChild(head);
+      if (S(w.n, 32)) { c.appendChild(el("div", "name", S(w.n, 32))); }
+      var g = el("div", "grid");
+      g.appendChild(el("span", "", "MC " + fmt(N(w.mc), 0, " SOL")));
+      g.appendChild(el("span", "", "holders " + fmt(N(w.ho), 0)));
+      g.appendChild(el("span", "", "buyers/m " + fmt(N(w.bu), 0)));
+      g.appendChild(el("span", "", "buy/m " + fmt(N(w.bv), 1, " SOL")));
+      g.appendChild(el("span", "", "age " + dur(N(w.a))));
+      if (S(w.tr, 8)) { g.appendChild(el("span", "", "tier " + S(w.tr, 8))); }
+      c.appendChild(g);
+      var chips = el("div", "chips");
+      if (S(w.vd, 32)) { chips.appendChild(el("span", "chip", S(w.vd, 32))); }
+      A(w.wc, 3).forEach(function (code) { if (S(code, 24)) { chips.appendChild(el("span", "chip warn", words(code))); } });
+      if (chips.firstChild) { c.appendChild(chips); }
+      box.appendChild(c);
+    });
+  }
+
+  function tuneButton(code) {
+    var b = el("button", "tune", "tune " + META[code].short);
+    b.type = "button";
+    b.addEventListener("click", function () { showTab("settings"); flashRow(code); });
+    return b;
+  }
+
+  function blockerRows(c, rows) {
+    rows.forEach(function (r) {
+      r = O(r);
+      var line = el("div", "kv");
+      var left = el("span", "k");
+      left.appendChild(el("span", "", words(r.k) || "?"));
+      line.appendChild(left);
+      var right = el("span", "v");
+      right.appendChild(el("span", "", fmt(N(r.r), 0) + " / " + fmt(N(r.n), 0) + " "));
+      var code = S(r.c, 2);
+      if (CODE_RE.test(code) && has(META, code)) { right.appendChild(tuneButton(code)); }
+      else if (S(r.sn, 24)) { right.appendChild(el("span", "muted", "(" + words(r.sn) + ", in the chat)")); }
+      else { right.appendChild(el("span", "muted", "(hard rule)")); }
+      line.appendChild(right);
+      c.appendChild(line);
+    });
+  }
+
+  function renderWhy(box) {
+    if (!has(SNAP, "fn")) {
+      var c0 = card("");
+      c0.appendChild(el("div", "muted", A(SNAP.dr, 3).indexOf("fn") >= 0 ? "The funnel was left out of this link: /why in the chat." : "No funnel in this snapshot."));
+      box.appendChild(c0);
+      return;
+    }
+    var fn = O(SNAP.fn);
+    function pair(x) { x = A(x, 2); return [N(x[0]), N(x[1])]; }
+    var ck = pair(fn.ck), or = pair(fn.or), bo = pair(fn.bo);
+    var c = card("Last 10 minutes (since start)");
+    kv(c, "Checks", fmt(ck[0], 0) + " (" + fmt(ck[1], 0) + ")");
+    kv(c, "Ordered", fmt(or[0], 0) + " (" + fmt(or[1], 0) + ")");
+    kv(c, "Bought", fmt(bo[0], 0) + " (" + fmt(bo[1], 0) + ")");
+    kv(c, "Last trade seen", N(fn.lt) === null ? "—" : dur(N(fn.lt)) + " ago");
+    box.appendChild(c);
+    var bl = A(fn.bl, 6);
+    var d = card("Top blockers (10 min / total)");
+    if (bl.length) { blockerRows(d, bl); } else { d.appendChild(el("div", "muted", "Nothing blocked an entry.")); }
+    box.appendChild(d);
+    var cm = A(fn.cm, 3);
+    if (cm.length) {
+      var e = card("Confirmations most often missing");
+      blockerRows(e, cm);
+      box.appendChild(e);
+    }
+  }
+
+  // ------------------------------------------------------------------ settings
+  function current(code) { return has(EDITS, code) ? EDITS[code] : (has(ORIG, code) ? ORIG[code] : null); }
+  function stepValue(m, cur, dir) {
+    var x = Math.round((cur + dir * m.step) / m.step) * m.step;
+    x = Math.min(m.hi, Math.max(m.lo, x));
+    return Number(x.toFixed(9));
+  }
+  function same(a, b) { return a !== null && b !== null && Math.abs(a - b) <= 1e-9; }
+  function pendingPairs() {
+    var out = [];
+    SCHEMA.settings.forEach(function (m) { if (has(META, m.code) && has(EDITS, m.code)) { out.push([m.code, EDITS[m.code]]); } });
+    return out;
+  }
+  function ruleErrors() {
+    var errs = [];
+    A(SCHEMA && SCHEMA.rules, 16).forEach(function (r) {
+      r = O(r);
+      var a = current(S(r.a, 2)), b = current(S(r.b, 2)), f = N(r.f);
+      if (a === null || b === null || f === null) { return; }
+      var ok = r.op === "lt" ? a < b * f : (r.op === "le" ? a <= b * f : true);
+      if (!ok) { errs.push(S(r.msg, 80)); }
+    });
+    return errs;
+  }
+
+  function renderSettingRow(parent, m) {
+    var row = el("div", "set");
+    var lbl = el("div", "lbl");
+    lbl.appendChild(el("b", "", m.short));
+    var hint = m.label + " · " + settingText(m, m.lo) + " to " + settingText(m, m.hi);
+    lbl.appendChild(el("small", "", hint));
+    var learnedNote = el("small", "", "");
+    lbl.appendChild(learnedNote);
+    var minus = el("button", "step", "−");
+    minus.type = "button";
+    minus.setAttribute("aria-label", "decrease " + m.short);
+    var val = el("span", "val", "");
+    var plus = el("button", "step", "+");
+    plus.type = "button";
+    plus.setAttribute("aria-label", "increase " + m.short);
+    row.appendChild(lbl); row.appendChild(minus); row.appendChild(val); row.appendChild(plus);
+    function paint() {
+      var v = current(m.code);
+      val.textContent = settingText(m, v);
+      var changed = has(EDITS, m.code);
+      row.className = "set" + (changed ? " changed" : "");
+      learnedNote.textContent = changed ? "was " + settingText(m, has(ORIG, m.code) ? ORIG[m.code] : null) : "";
+      var ld = O(SNAP && SNAP.ld);
+      if (!changed && has(ld, m.code) && N(ld[m.code]) !== null) { learnedNote.textContent = "learner uses " + settingText(m, ld[m.code]); }
+      var off = v === null || !IN_TG;
+      minus.disabled = off || v <= m.lo;
+      plus.disabled = off || v >= m.hi;
+    }
+    function step(dir) {
+      var v = current(m.code);
+      if (v === null) { return; }
+      var nv = stepValue(m, v, dir);
+      if (same(nv, v)) { haptic("warning"); return; }
+      if (has(ORIG, m.code) && same(nv, ORIG[m.code])) { delete EDITS[m.code]; } else { EDITS[m.code] = nv; }
+      SENT = false;
+      haptic("step");
+      paint();
+      refreshApply();
+    }
+    minus.addEventListener("click", function () { step(-1); });
+    plus.addEventListener("click", function () { step(1); });
+    ROWS[m.code] = { el: row, paint: paint };
+    paint();
+    parent.appendChild(row);
+  }
+
+  function flashRow(code) {
+    var r = ROWS[code];
+    if (!r) { return; }
+    r.el.classList.add("flash");
+    try { r.el.scrollIntoView({ block: "center" }); } catch (e) { r.el.scrollIntoView(); }
+    setTimeout(function () { r.el.classList.remove("flash"); }, 1600);
+  }
+
+  var applyBox = null;
+  function renderSettings(box) {
+    ROWS = {};
+    if (!SCHEMA) { box.appendChild(el("div", "banner bad", "This page has no settings schema: rebuild it.")); return; }
+    var top = card("");
+    top.appendChild(el("div", "muted", "Preset " + (S(SNAP.pr, 8) || "—") + " · learning " + (S(SNAP.lm, 8) || "—") + " (both changed in the chat). Changes here stay on this phone until Apply, at most " + PAYLOAD.maxChanges + " at a time."));
+    var reset = el("button", "btn", "Undo all changes");
+    reset.type = "button";
+    reset.addEventListener("click", function () { EDITS = {}; SENT = false; Object.keys(ROWS).forEach(function (k) { ROWS[k].paint(); }); refreshApply(); });
+    var tools = el("div", "chips");
+    tools.appendChild(reset);
+    top.appendChild(tools);
+    applyBox = el("div", "");
+    top.appendChild(applyBox);
+    box.appendChild(top);
+    A(SCHEMA.groups, 32).forEach(function (g) {
+      g = O(g);
+      var codes = A(g.codes, 64).filter(function (c) { return typeof c === "string" && has(META, c); });
+      if (!codes.length) { return; }
+      var c = card(S(g.title, 40));
+      codes.forEach(function (code) { renderSettingRow(c, META[code]); });
+      box.appendChild(c);
+    });
+    refreshApply();
+  }
+
+  function applyState() {
+    var pairs = pendingPairs();
+    var st = { n: pairs.length, payload: "", error: "" };
+    if (!pairs.length) { return st; }
+    var errs = ruleErrors();
+    if (errs.length) { st.error = errs.join(" · "); return st; }
+    if (pairs.length > PAYLOAD.maxChanges) { st.error = "Too many changes: at most " + PAYLOAD.maxChanges + " per apply."; return st; }
+    try { st.payload = encodePayload(pairs); } catch (e) { st.error = String(e && e.message ? e.message : e); }
+    if (!st.error && !BOT_RE.test(BOT)) { st.error = "The snapshot does not name the bot: apply from the chat."; }
+    return st;
+  }
+
+  function refreshApply() {
+    var st = applyState();
+    if (applyBox) {
+      clear(applyBox);
+      if (st.n) {
+        applyBox.appendChild(el("div", "muted", st.n + (st.n === 1 ? " change" : " changes") + " not applied yet."));
+        if (st.error) { applyBox.appendChild(el("div", "err", st.error)); }
+        else if (SENT) { applyBox.appendChild(el("div", "good", "Sent to the bot. The chat confirms each change.")); }
+      } else if (!IN_TG) {
+        applyBox.appendChild(el("div", "muted", "Read only: changing settings needs the Telegram app."));
+      }
+    }
+    if (!IN_TG || !TG.MainButton) { return; }
+    try {
+      var mb = TG.MainButton;
+      if (!st.n) { mb.hide(); return; }
+      if (SENT) { mb.setText("Sent ✓"); mb.disable(); }
+      else if (st.error) { mb.setText(st.n > PAYLOAD.maxChanges ? "Too many changes (max " + PAYLOAD.maxChanges + ")" : "Check the settings"); mb.disable(); }
+      else { mb.setText("Apply " + st.n + (st.n === 1 ? " change" : " changes")); mb.enable(); }
+      mb.show();
+    } catch (e) { /* the button is a nicety; the payload is shown above */ }
+  }
+
+  function apply() {
+    var st = applyState();
+    if (!st.n || st.error || !st.payload || SENT) { haptic("error"); refreshApply(); return; }
+    try {
+      if (!TG.initData) {
+        TG.sendData(st.payload);                  // keyboard-button launch: the app closes
+      } else {
+        TG.openTelegramLink("https://t.me/" + BOT + "?start=" + st.payload);
+      }
+      SENT = true;
+      haptic("success");
+    } catch (e) {
+      haptic("error");
+      if (applyBox) { applyBox.appendChild(el("div", "err", "Telegram refused: send /start " + st.payload + " in the chat.")); }
+      return;
+    }
+    refreshApply();
+  }
+
+  function renderLearner(box) {
+    var ln = O(SNAP.ln);
+    var c = card("Learner");
+    var mode = S(ln.m, 8) || S(SNAP.lm, 8) || "—";
+    kv(c, "Mode", mode);
+    kv(c, "Acting on entries", ln.a === true ? "yes" : "no", ln.a === true ? "good" : "");
+    kv(c, "Model", S(ln.mv, 16) || "none");
+    kv(c, "Fitted on", N(ln.n) === null ? "—" : fmt(N(ln.n), 0) + " shadows");
+    kv(c, "Walk-forward AUC", fmt(N(ln.auc), 3));
+    kv(c, "Exit cell", S(ln.cell, 8) || "—");
+    if (S(ln.why, 48)) { kv(c, "Why no model", S(ln.why, 48)); }
+    box.appendChild(c);
+    var hot = A(ln.hot, 5).filter(function (h) { return Array.isArray(h) && typeof h[0] === "string" && N(h[1]) !== null; });
+    if (hot.length) {
+      var d = card("Hottest narrative words");
+      var chips = el("div", "chips");
+      hot.forEach(function (h) { chips.appendChild(el("span", "chip", S(h[0], 16) + " " + fmt(N(h[1]), 1))); });
+      d.appendChild(chips);
+      box.appendChild(d);
+    }
+    var ld = O(SNAP.ld), codes = Object.keys(ld).filter(function (k) { return has(META, k) && N(ld[k]) !== null; });
+    if (codes.length) {
+      var e = card("Learned values in use");
+      codes.forEach(function (k) { kv(e, META[k].short, settingText(META[k], ld[k])); });
+      box.appendChild(e);
+    }
+  }
+
+  // ------------------------------------------------------------------ tabs
+  var VIEWS = { status: renderStatus, positions: renderPositions, watch: renderWatch, why: renderWhy,
+                settings: renderSettings, learner: renderLearner };
+  function showTab(name) {
+    if (!has(VIEWS, name)) { return; }
+    tabNow = name;
+    Array.prototype.forEach.call(doc.querySelectorAll("#tabs button"), function (b) {
+      b.setAttribute("aria-selected", b.getAttribute("data-tab") === name ? "true" : "false");
+    });
+    Object.keys(VIEWS).forEach(function (k) { doc.getElementById("tab-" + k).hidden = k !== name; });
+  }
+  function renderAll() {
+    renderBanners();
+    renderAge();
+    Object.keys(VIEWS).forEach(function (k) {
+      var box = doc.getElementById("tab-" + k);
+      clear(box);
+      try { VIEWS[k](box); } catch (e) { box.appendChild(el("div", "banner bad", "This view could not be drawn from the snapshot.")); }
+    });
+    showTab(tabNow);
+  }
+  function fatal(msg) {
+    var box = doc.getElementById("banners");
+    clear(box);
+    box.appendChild(el("div", "banner bad", msg));
+    Object.keys(VIEWS).forEach(function (k) { clear(doc.getElementById("tab-" + k)); });
+    doc.getElementById("tabs").hidden = true;
+  }
+
+  async function boot() {
+    Array.prototype.forEach.call(doc.querySelectorAll("#tabs button"), function (b) {
+      b.addEventListener("click", function () { showTab(b.getAttribute("data-tab")); });
+    });
+    if (IN_TG) {
+      try { TG.ready(); TG.expand(); } catch (e) { /* older clients */ }
+      applyTheme();
+      try { TG.onEvent("themeChanged", applyTheme); } catch (e) { /* older clients */ }
+      try { TG.MainButton.onClick(apply); } catch (e) { /* no main button */ }
+    }
+    if (!SCHEMA) { fatal("This page is broken (no settings schema). Rebuild it with td385.meme.miniapp build."); return; }
+    var frag = fragmentParam();
+    if (frag === null) { fatal("No snapshot in the link. Open the app from the bot's 📱 App button or menu button."); return; }
+    if (frag === "") { fatal("The snapshot in the link is malformed."); return; }
+    try {
+      SNAP = O(await decodeSnapshot(frag));
+    } catch (e) {
+      fatal(e instanceof UserError ? e.message : "The snapshot could not be read.");
+      return;
+    }
+    BOT = S(SNAP.b, 32);
+    var s = O(SNAP.s);
+    Object.keys(META).forEach(function (code) { if (has(s, code) && N(s[code]) !== null) { ORIG[code] = s[code]; } });
+    renderAll();
+    doc.body.setAttribute("data-ready", "1");
+    setInterval(function () { renderAge(); renderBanners(); }, 1000);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
